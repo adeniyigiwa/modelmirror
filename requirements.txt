@@ -9,3 +9,4 @@ shap
 fpdf
 xgboost
 lightgbm
+fairlearn
