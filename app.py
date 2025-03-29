@@ -24,23 +24,50 @@ if uploaded_model and uploaded_data:
         st.sidebar.success("✅ Data & model loaded")
         st.sidebar.write("Columns in data:", list(data.columns))
 
-        common_targets = ["target", "income", "label"]
-        common_protected = ["gender", "race", "sex", "ethnicity"]
+        # Automatically get the expected features from the model
+        try:
+            model_features = getattr(model, 'feature_names_in_', None)
+            if model_features is None:
+                raise ValueError("Model does not expose feature names")
+            st.sidebar.write(f"Expected features: {model_features}")
+        except Exception as e:
+            st.error(f"❌ Error extracting model features: {e}")
+            model_features = []
 
-        default_target = next((col for col in data.columns if col.lower() in common_targets), data.columns[-1])
-        default_protected = next((col for col in data.columns if col.lower() in common_protected), data.columns[0])
+        # Map model features to dataset columns (match by name similarity)
+        matching_columns = []
+        for feature in model_features:
+            matches = [col for col in data.columns if feature.lower() in col.lower()]
+            if matches:
+                matching_columns.append((feature, matches[0]))  # Mapping the feature to the best match
 
-        target_column = st.sidebar.selectbox("Select target column", data.columns, index=data.columns.get_loc(default_target))
-        protected_column = st.sidebar.selectbox("Select protected attribute", data.columns, index=data.columns.get_loc(default_protected))
+        # If features do not match, ask user for manual mapping
+        if not matching_columns:
+            st.sidebar.warning("No matching columns found between the model and dataset. Please manually map them.")
+
+        # Create a dictionary of column mappings if necessary
+        column_mapping = {}
+        if st.sidebar.button("Auto Map Columns") and matching_columns:
+            for feature, match in matching_columns:
+                column_mapping[feature] = match
 
         st.subheader("📋 Dataset Preview")
         with st.expander("🔎 View data sample"):
             st.dataframe(data.head())
 
-        if st.sidebar.button("Run Audit"):
-            X = data.drop(columns=[target_column])
-            y = data[target_column]
-            y_pred = model.predict(X)
+        # If the user manually maps columns, apply the mapping
+        if column_mapping:
+            st.sidebar.write("Using the following column mappings:")
+            st.sidebar.write(column_mapping)
+            X = data[list(column_mapping.values())]
+        else:
+            X = data[model_features] if model_features else data
+
+        # Ensure dataset and model are compatible
+        if X.shape[1] != len(model_features):
+            st.error("Mismatch between model features and dataset columns.")
+        else:
+            y_pred = model(X)
 
             fairness = evaluate_fairness(y, y_pred, data[protected_column])
             leakage_report = check_leakage(data, target_column)
