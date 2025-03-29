@@ -71,13 +71,7 @@ def load_any_dataset(file) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-# --- In your app.py ---
-from utils.load_model import load_any_model, load_any_dataset
-
-# Replace previous lines:
-# model = joblib.load(uploaded_model)
-# data = pd.read_csv(uploaded_data)
-
-# With this:
-model = load_any_model(uploaded_model)
-data = load_any_dataset(uploaded_data)
+# In your app.py, replace model loading like this:
+# from utils.load_model import load_any_model, load_any_dataset
+# model = load_any_model(uploaded_model)
+# data = load_any_dataset(uploaded_data)
