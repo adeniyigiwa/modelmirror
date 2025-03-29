@@ -10,3 +10,6 @@ fpdf
 xgboost
 lightgbm
 fairlearn
+onnxruntime
+openpyxl
+pyarrow
