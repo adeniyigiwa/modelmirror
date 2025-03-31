@@ -36,13 +36,14 @@ if uploaded_model and uploaded_data:
 
         # Map model features to dataset columns (match by name similarity)
         matching_columns = []
-        for feature in model_features:
-            matches = [col for col in data.columns if feature.lower() in col.lower()]
-            if matches:
-                matching_columns.append((feature, matches[0]))  # Mapping the feature to the best match
+        if model_features:
+            for feature in model_features:
+                matches = [col for col in data.columns if feature.lower() in col.lower()]
+                if matches:
+                    matching_columns.append((feature, matches[0]))  # Mapping the feature to the best match
 
         # If features do not match, ask user for manual mapping
-        if not matching_columns:
+        if not matching_columns and model_features:
             st.sidebar.warning("No matching columns found between the model and dataset. Please manually map them.")
 
         # Create a dictionary of column mappings if necessary
@@ -61,6 +62,7 @@ if uploaded_model and uploaded_data:
             st.sidebar.write(column_mapping)
             X = data[list(column_mapping.values())]
         else:
+            # Fallback: Use model_features if available, else use all columns
             X = data[model_features] if model_features else data
 
         # Ensure dataset and model are compatible
